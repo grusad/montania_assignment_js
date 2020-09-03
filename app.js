@@ -2,6 +2,9 @@
 const logger = require("./logger")
 const https = require("https");
 
+let mostExpensiveProducts = [];
+let cheapestProducts = [];
+
 class Product {
     constructor(name, price, inStock, category){
         this.name = name;
@@ -26,6 +29,7 @@ function getHttpResponse(callback){
     })
 }
 
+// generate products from the provided data
 function generateProducts(data){
 
     let items = new Map();
@@ -54,7 +58,36 @@ function sortProducts(products){
     }
 }
 
+//Inspect the price of current product and places it in the correct array. (Most or least expensive array)
+function inspectProduct(product){
+    if(mostExpensiveProducts.length > 0){
+        let current = mostExpensiveProducts[0].price;
+        if(product.price > current){
+            mostExpensiveProducts = [product];
+        }
+        else if(product.price == current){
+            mostExpensiveProducts.push(product);
+        }
+    }
+    else{
+        mostExpensiveProducts.push(product);
+    }
+    if(cheapestProducts.length > 0){
+        let current = cheapestProducts[0].price;
+        if (product.price < current){
+            cheapestProducts = [product];
+        }
+        else if(product.price == current){
+            cheapestProducts.push(product);
+        }
+    }
+    else{
+        cheapestProducts.push(product);
+    }
 
+}
+
+//constructs and returns a Product object based of data provided
 function buildProduct(itemData){
 
     let name = getPropertyFromData(itemData, "artiklar_benamning");
@@ -69,7 +102,9 @@ function buildProduct(itemData){
     stock = (stock > 0) ? "Yes" : "No";
 
 
-    return new Product(name, price, stock, category);
+    let product = new Product(name, price, stock, category);
+    inspectProduct(product);
+    return product;
 }
 
 function getPropertyFromData(source, property){
@@ -83,7 +118,7 @@ function run(){
     getHttpResponse(function(result){
         let products = generateProducts(result.products);
         sortProducts(products);
-        logger.log(products);
+        logger.log(products, mostExpensiveProducts, cheapestProducts);
     });
 
 }
